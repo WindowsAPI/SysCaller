@@ -392,20 +392,20 @@ jobs:
     - name: Create Release Package
       if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
       run: |
-        $version = Get-Date -Format "yyyy.MM.dd-HHmm"
+        $version = "v1.4.0-${{ github.run_number }}"
         $zipName = "Bind-x64-$version.zip"
 
-        # Create a temporary dir for packaging
         New-Item -ItemType Directory -Path "release-package" -Force
 
-        # Copy the entire Release directory (includes all dependencies from windeployqt + vcpkg)
         Copy-Item "x64/Release/*" "release-package\" -Recurse
 
         # Create README
-        $readmeText = "# Bind (SysCaller) - x64`n`n"
+        $version = "v1.4.0-${{ github.run_number }}"
+        $readmeText = "# Bind (SysCaller) - x64 v1.4.0`n`n"
         $readmeText += "Build Date: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')`n"
         $readmeText += "Commit: ${{ github.sha }}`n"
-        $readmeText += "Platform: Windows x64 (64-bit)`n`n"
+        $readmeText += "Platform: Windows x64 (64-bit)`n"
+        $readmeText += "Version: $version`n`n"
         $readmeText += "## Installation`n"
         $readmeText += "1. Download Bind.exe`n"
         $readmeText += "2. Run the executable`n`n"
@@ -426,5 +426,35 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: Release-Package-x64
-        path: Bind/Bind-x64-*.zip
+        path: Bind/Bind-x64-v1.4.0-*.zip
         retention-days: 90
+
+    - name: Create GitHub Release
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.run_number }}
+        release_name: Bind (SysCaller) - v1.4.0-${{ github.run_number }}
+        body: |
+          ## Bind (SysCaller) Release v1.4.0-${{ github.run_number }}
+
+          **Build Date:** ${{ github.event.head_commit.timestamp }}
+          **Commit:** ${{ github.sha }}
+          **Platform:** Windows x64 (64-bit)
+
+          ## Installation
+          1. Download Bind.zip
+          2. Replace the downloaded Bind directory with the one in SysCaller
+          3. Extract the zip & run the Bind.exe
+
+          ## Requirements
+          - Windows 10 or later
+          - Visual C++ Redistributable (if not already installed)
+          - Qt5 runtime libraries (if not already installed)
+
+          ## Files
+          - `Bind-x64-v1.4.0-${{ github.run_number }}.zip`
+        files: |
+          Bind/Bind-x64-v1.4.0-${{ github.run_number }}.zip
